@@ -252,10 +252,13 @@ curl "http://localhost:8080/500EUR/of/ETH/on/2021-01-01?type=crypto"
    go mod tidy
    ```
 
-3. **Configure API keys** (optional)
+3. **Configure environment variables** (optional)
    ```bash
-   # Edit main.go to add your Alpha Vantage API key
-   # const alphaVantageAPIKey = "YOUR_API_KEY"
+   # Copy the example environment file
+   cp env.example .env
+   
+   # Edit .env to add your API keys
+   # ALPHA_VANTAGE_API_KEY=your_api_key_here
    ```
 
 4. **Run the server**
@@ -269,17 +272,43 @@ The API will be available at `http://localhost:8080`
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | Server port | `8080` |
-| `GIN_MODE` | Gin mode (`debug`/`release`) | `debug` |
+The application uses environment variables for configuration. Copy `env.example` to `.env` and modify as needed:
 
-### API Keys
+```bash
+cp env.example .env
+```
+
+#### Required Environment Variables
+
+| Variable | Description | Default | Required |
+|----------|-------------|---------|----------|
+| `ALPHA_VANTAGE_API_KEY` | Alpha Vantage API key | `2G2R3SZ8BNV2EGAL` | No (uses demo key) |
+| `ALPHA_VANTAGE_BASE_URL` | Alpha Vantage API base URL | `https://www.alphavantage.co` | No |
+| `FRANKFURTER_BASE_URL` | Frankfurter API base URL | `https://api.frankfurter.app` | No |
+| `PORT` | Server port | `8080` | No |
+| `GIN_MODE` | Gin mode (`debug`/`release`) | `debug` | No |
+
+#### API Keys
 
 The application uses free APIs by default, but you can enhance it with paid API keys:
 
 - **Alpha Vantage**: For stock data (free tier: 25 requests/day)
+  - Get your free API key: https://www.alphavantage.co/support/#api-key
 - **Frankfurter**: For currency conversion (free, no key required)
+
+#### Example Configuration
+
+```bash
+# Production configuration
+export ALPHA_VANTAGE_API_KEY=your_paid_api_key_here
+export GIN_MODE=release
+export PORT=3000
+
+# Development configuration
+export ALPHA_VANTAGE_API_KEY=your_dev_api_key_here
+export GIN_MODE=debug
+export PORT=8080
+```
 
 ## 🧪 Testing
 

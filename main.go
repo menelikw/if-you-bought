@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"regexp"
 	"strconv"
 	"time"
@@ -13,7 +14,22 @@ import (
 	"github.com/piquette/finance-go/datetime"
 )
 
-const alphaVantageAPIKey = "2G2R3SZ8BNV2EGAL"
+// Environment variables
+var (
+	alphaVantageAPIKey  = getEnv("ALPHA_VANTAGE_API_KEY", "2G2R3SZ8BNV2EGAL")
+	alphaVantageBaseURL = getEnv("ALPHA_VANTAGE_BASE_URL", "https://www.alphavantage.co")
+	frankfurterBaseURL  = getEnv("FRANKFURTER_BASE_URL", "https://api.frankfurter.app")
+	serverPort          = getEnv("PORT", "8080")
+	ginMode             = getEnv("GIN_MODE", "debug")
+)
+
+// Helper function to get environment variables with defaults
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
 
 // Alpha Vantage daily time series response struct
 // Only the fields we need
@@ -36,7 +52,7 @@ type dividendData struct {
 
 // Fetch historical daily close price for a given ticker and date (YYYY-MM-DD)
 func fetchStockDailyCloseAlphaVantage(ticker, date string) (float64, error) {
-	url := fmt.Sprintf("https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=%s&apikey=%s", ticker, alphaVantageAPIKey)
+	url := fmt.Sprintf("%s/query?function=TIME_SERIES_DAILY&symbol=%s&apikey=%s", alphaVantageBaseURL, ticker, alphaVantageAPIKey)
 	resp, err := http.Get(url)
 	if err != nil {
 		return 0, err
@@ -165,6 +181,9 @@ func calculateDRIP(shares float64, dividends []dividendData, stockPrice float64)
 }
 
 func main() {
+	// Set Gin mode from environment
+	gin.SetMode(ginMode)
+
 	r := gin.Default()
 
 	// Quantity-based routes
@@ -177,7 +196,8 @@ func main() {
 	r.GET("/:amount/of/:ticker/on/:buyDate/and-sold-on/:sellDate", handleAmountBuySell)
 	r.GET("/:amount/of/:ticker/on/:buyDate/and-sold-on/:sellDate/with-drip", handleAmountBuySellDrip)
 
-	r.Run(":8080")
+	// Start server with configured port
+	r.Run(":" + serverPort)
 }
 
 // Utility function stubs
@@ -227,7 +247,7 @@ type frankfurterResponse struct {
 // Fetch historical FX rates using Frankfurter (free, no API key required)
 func getHistoricalFXRate(fromCurrency, toCurrency, date string) (float64, error) {
 	// Frankfurter format: https://api.frankfurter.app/2020-01-01?from=EUR&to=USD
-	url := fmt.Sprintf("https://api.frankfurter.app/%s?from=%s&to=%s", date, fromCurrency, toCurrency)
+	url := fmt.Sprintf("%s/%s?from=%s&to=%s", frankfurterBaseURL, date, fromCurrency, toCurrency)
 	resp, err := http.Get(url)
 	if err != nil {
 		return 0, err
