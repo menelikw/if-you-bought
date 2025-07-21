@@ -103,53 +103,58 @@ func min(a, b int) int {
 
 // Fetch historical dividends for a given ticker and date range
 func fetchStockDividendsAlphaVantage(ticker, startDate, endDate string) ([]dividendData, error) {
-	// Note: Alpha Vantage TIME_SERIES_DAILY_ADJUSTED is premium, so we'll use a free alternative
-	// For now, we'll simulate dividend data based on typical dividend yields
-	// In production, you'd use a paid API or alternative data source
+	// Use Alpha Vantage TIME_SERIES_MONTHLY_ADJUSTED endpoint
+	url := fmt.Sprintf("%s/query?function=TIME_SERIES_MONTHLY_ADJUSTED&symbol=%s&apikey=%s", alphaVantageBaseURL, ticker, alphaVantageAPIKey)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
 
-	var dividends []dividendData
-
-	// Simulate quarterly dividends for demonstration
-	// In reality, you'd fetch this from a dividend API
-	// Common dividend dates: March, June, September, December
-
-	// For AAPL, typical dividend is around $0.24 per share quarterly
-	// This is a simplified simulation - real implementation would use actual dividend data
-
-	// Parse dates to check if they fall in dividend periods
-	start, err := time.Parse("2006-01-02", startDate)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
+	// Debug: print the first 500 characters of the response
+	fmt.Printf("Alpha Vantage dividend response (first 500 chars): %s\n", string(body[:min(500, len(body))]))
+
+	var result struct {
+		TimeSeries map[string]map[string]string `json:"Monthly Adjusted Time Series"`
+	}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("JSON unmarshal error: %v", err)
+	}
+
+	if result.TimeSeries == nil {
+		return nil, fmt.Errorf("No time series data returned from Alpha Vantage")
+	}
+
+	start, err := time.Parse("2006-01-02", startDate)
+	if err != nil {
+		return nil, err
+	}
 	end, err := time.Parse("2006-01-02", endDate)
 	if err != nil {
 		return nil, err
 	}
 
-	// Simulate dividends for the date range
-	// This is a simplified approach - real implementation would use actual dividend data
-	dividendAmount := 0.24 // Typical AAPL quarterly dividend
-
-	// Check if the date range includes dividend periods
-	// This is a simplified simulation
-	if ticker == "AAPL" {
-		// Simulate quarterly dividends
-		dividendDates := []string{"2025-03-15", "2025-06-15", "2025-09-15", "2025-12-15"}
-
-		for _, divDate := range dividendDates {
-			divTime, err := time.Parse("2006-01-02", divDate)
-			if err != nil {
+	var dividends []dividendData
+	for dateStr, data := range result.TimeSeries {
+		divDate, err := time.Parse("2006-01-02", dateStr)
+		if err != nil {
+			continue
+		}
+		if (divDate.After(start) || divDate.Equal(start)) && (divDate.Before(end) || divDate.Equal(end)) {
+			dividendStr := data["7. dividend amount"]
+			amount, err := strconv.ParseFloat(dividendStr, 64)
+			if err != nil || amount == 0 {
 				continue
 			}
-
-			// Check if dividend date falls within our range
-			if (divTime.After(start) || divTime.Equal(start)) && (divTime.Before(end) || divTime.Equal(end)) {
-				dividends = append(dividends, dividendData{
-					Date:   divDate,
-					Amount: dividendAmount,
-				})
-			}
+			dividends = append(dividends, dividendData{
+				Date:   dateStr,
+				Amount: amount,
+			})
 		}
 	}
 
@@ -185,6 +190,9 @@ func main() {
 	gin.SetMode(ginMode)
 
 	r := gin.Default()
+
+	// Serve static files for the UI
+	r.Static("/", "./static")
 
 	// Quantity-based routes
 	r.GET("/:amount/:ticker/on/:buyDate", handleAmountBuy)
