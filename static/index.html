@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>If You Bought - Investment Backtesting</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>📈 If You Bought</h1>
+    <form id="backtest-form">
+      <div class="form-group">
+        <label for="amount">Amount (e.g. 10, 1000USD, 500EUR):</label>
+        <input type="text" id="amount" name="amount" required>
+      </div>
+      <div class="form-group">
+        <label for="ticker">Ticker (e.g. AAPL, BTC):</label>
+        <input type="text" id="ticker" name="ticker" required>
+      </div>
+      <div class="form-group">
+        <label for="buyDate">Buy Date:</label>
+        <input type="date" id="buyDate" name="buyDate" required>
+      </div>
+      <div class="form-group">
+        <label for="sellDate">Sell Date (optional):</label>
+        <input type="date" id="sellDate" name="sellDate">
+      </div>
+      <div class="form-group">
+        <label for="type">Asset Type:</label>
+        <select id="type" name="type">
+          <option value="stock">Stock</option>
+          <option value="crypto">Crypto</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="drip">Dividend Reinvestment (DRIP):</label>
+        <input type="checkbox" id="drip" name="drip">
+      </div>
+      <button type="submit">Backtest</button>
+    </form>
+    <div id="result" class="result"></div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html> 
